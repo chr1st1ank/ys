@@ -3,7 +3,11 @@ name = "ys"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies.clap]
+version = "3.2.17"
+features = ["derive", "suggestions", "color", "wrap_help"]
 
-[dependencies]
-clap = { version = "3.2.17", features = ["derive"] }
+[dependencies.syntect]
+version = "5.0.0"
+default-features = false
+features = ["parsing", "default-fancy"]
