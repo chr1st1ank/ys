@@ -1,0 +1,8 @@
+key-with-string: "string"
+key-with-float: 3.14
+key-with-subtree:
+  nested-key-with-string: "another string"
+key-with-list:
+  - item 1
+  - item 2
+  - item 3
