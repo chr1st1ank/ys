@@ -47,10 +47,9 @@ fn write_out(stream: Box<dyn io::BufRead>, use_color: bool) -> Result<(), io::Er
     if use_color {
         let syntax_set = syntect::parsing::SyntaxSet::load_defaults_nonewlines();
         let theme_set = highlighting::ThemeSet::load_defaults();
-        let mut theme = theme_set.themes["Solarized (dark)"].to_owned();
-        theme.settings.background = None;
+        let theme = &theme_set.themes["Solarized (dark)"];
         let mut highlighter =
-            easy::HighlightLines::new(syntax_set.find_syntax_by_extension("yml").unwrap(), &theme);
+            easy::HighlightLines::new(syntax_set.find_syntax_by_extension("yml").unwrap(), theme);
 
         for line in stream.lines() {
             let str_line = line?;
