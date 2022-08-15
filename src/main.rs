@@ -1,7 +1,8 @@
+extern crate yaml_rust;
 use clap::Parser;
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, Error};
+use std::io::Error;
 use std::process;
 use syntect::{easy, highlighting};
 
@@ -16,7 +17,7 @@ fn main() {
     let args = CommandLineArgs::parse();
     let file_path = args.input;
 
-    if let Err(e) = process_stream(file_path) {
+    if let Err(e) = run(file_path) {
         error_exit(e);
     }
 }
@@ -26,11 +27,30 @@ fn error_exit(e: Error) {
     process::exit(1);
 }
 
-fn process_stream(file_path: Option<String>) -> Result<(), io::Error> {
-    let reader = open_input_stream(file_path)?;
+fn run(file_path: Option<String>) -> Result<(), io::Error> {
+    let mut reader = open_input_stream(file_path)?;
+
+    let mut s = String::new();
+    (*reader).read_to_string(&mut s)?;
+    let preprocessed_yaml = parse_yaml(s)?;
+
     let use_color = atty::is(atty::Stream::Stdout);
-    write_out(reader, use_color)?;
+    print_output(preprocessed_yaml, use_color)?;
+
     Ok(())
+}
+
+fn parse_yaml(s: String) -> Result<String, io::Error> {
+    let docs = yaml_rust::YamlLoader::load_from_str(s.as_str()).unwrap();
+
+    // Dump the YAML object
+    let mut out_str = String::new();
+    for doc in docs.iter() {
+        let mut emitter = yaml_rust::YamlEmitter::new(&mut out_str);
+        emitter.dump(doc).unwrap();
+        out_str.push('\n');
+    }
+    Ok(out_str)
 }
 
 fn open_input_stream(file_path: Option<String>) -> Result<Box<dyn io::BufRead>, io::Error> {
@@ -43,35 +63,36 @@ fn open_input_stream(file_path: Option<String>) -> Result<Box<dyn io::BufRead>, 
     }
 }
 
-fn write_out(stream: Box<dyn io::BufRead>, use_color: bool) -> Result<(), io::Error> {
+fn print_output(text: String, use_color: bool) -> Result<(), io::Error> {
     if use_color {
-        let syntax_set = syntect::parsing::SyntaxSet::load_defaults_nonewlines();
-        let theme_set = highlighting::ThemeSet::load_defaults();
-        let theme = &theme_set.themes["Solarized (dark)"];
-        let mut highlighter =
-            easy::HighlightLines::new(syntax_set.find_syntax_by_extension("yml").unwrap(), theme);
-
-        for line in stream.lines() {
-            let str_line = line?;
-            let escaped = highlight_for_shell(&mut highlighter, &syntax_set, str_line);
-            println!("{}", escaped);
-        }
+        print_highlighted(&text);
     } else {
-        for line in stream.lines() {
-            println!("{}", line?);
+        for line in text.lines() {
+            println!("{}", line);
         }
     }
     Ok(())
 }
 
-fn highlight_for_shell(
+fn print_highlighted(text: &String) {
+    let syntax_set = syntect::parsing::SyntaxSet::load_defaults_nonewlines();
+    let theme_set = highlighting::ThemeSet::load_defaults();
+    let theme = &theme_set.themes["Solarized (dark)"];
+    let mut highlighter =
+        easy::HighlightLines::new(syntax_set.find_syntax_by_extension("yml").unwrap(), theme);
+    for line in text.lines() {
+        let escaped = highlight_line(&mut highlighter, &syntax_set, line);
+        println!("{}", escaped);
+    }
+}
+
+fn highlight_line(
     highlighter: &mut easy::HighlightLines,
     syntax_set: &syntect::parsing::SyntaxSet,
-    str_line: String,
+    text: &str,
 ) -> String {
-    let ranges: Vec<(highlighting::Style, &str)> = highlighter
-        .highlight_line(str_line.as_str(), syntax_set)
-        .unwrap();
+    let ranges: Vec<(highlighting::Style, &str)> =
+        highlighter.highlight_line(text, syntax_set).unwrap();
     let escaped = syntect::util::as_24_bit_terminal_escaped(&ranges[..], true);
     escaped
 }

@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 atty = "0.2"
+yaml-rust = "0.4"
 
 [dependencies.clap]
 version = "3.2.17"

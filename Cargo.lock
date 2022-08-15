@@ -548,4 +548,5 @@ dependencies = [
  "atty",
  "clap",
  "syntect",
+ "yaml-rust",
 ]

@@ -1,0 +1,20 @@
+receipt: Oz-Ware Purchase Invoice
+date: 2012-08-06
+customer:
+  first name: Harry
+  family name: Potter
+address: |-
+  4 Privet Drive,
+  Little Whinging,
+  England
+items:
+- part_no: A4786
+  description: Water Bucket (Filled)
+  price: 1.47
+  quantity:  4
+
+- part_no: E1628
+  description: High Heeled "Ruby" Slippers
+  size: 8
+  price: 133.7
+  quantity: 1
