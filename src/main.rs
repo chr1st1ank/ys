@@ -28,7 +28,8 @@ fn error_exit(e: Error) {
 
 fn process_stream(file_path: Option<String>) -> Result<(), io::Error> {
     let reader = open_input_stream(file_path)?;
-    write_out(reader, true)?;
+    let use_color = atty::is(atty::Stream::Stdout);
+    write_out(reader, use_color)?;
     Ok(())
 }
 
@@ -42,14 +43,14 @@ fn open_input_stream(file_path: Option<String>) -> Result<Box<dyn io::BufRead>, 
     }
 }
 
-fn write_out(stream: Box<dyn io::BufRead>, formatted: bool) -> Result<(), io::Error> {
-    if formatted {
+fn write_out(stream: Box<dyn io::BufRead>, use_color: bool) -> Result<(), io::Error> {
+    if use_color {
         let syntax_set = syntect::parsing::SyntaxSet::load_defaults_nonewlines();
         let theme_set = highlighting::ThemeSet::load_defaults();
-        let mut highlighter = easy::HighlightLines::new(
-            syntax_set.find_syntax_by_extension("yml").unwrap(),
-            &theme_set.themes["Solarized (dark)"],
-        );
+        let mut theme = theme_set.themes["Solarized (dark)"].to_owned();
+        theme.settings.background = None;
+        let mut highlighter =
+            easy::HighlightLines::new(syntax_set.find_syntax_by_extension("yml").unwrap(), &theme);
 
         for line in stream.lines() {
             let str_line = line?;

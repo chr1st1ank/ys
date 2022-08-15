@@ -3,6 +3,10 @@ name = "ys"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies]
+atty = "0.2"
+console = "0.15.1"
+
 [dependencies.clap]
 version = "3.2.17"
 features = ["derive", "suggestions", "color", "wrap_help"]
