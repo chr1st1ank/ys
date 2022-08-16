@@ -1,24 +1,16 @@
 extern crate yaml_rust;
-use clap::Parser;
 use std::fs::File;
 use std::io;
 use std::io::Error;
 use std::process;
 
+mod config;
 mod output;
 
-#[derive(Parser, Debug)]
-#[clap(version, about, long_about = None)]
-struct CommandLineArgs {
-    /// Input file or "--" to read from stdin
-    input: Option<String>,
-}
-
 fn main() {
-    let args = CommandLineArgs::parse();
-    let file_path = args.input;
+    let cfg = config::AppConfig::from_args();
 
-    if let Err(e) = run(file_path) {
+    if let Err(e) = run(cfg) {
         error_exit(e);
     }
 }
@@ -28,27 +20,26 @@ fn error_exit(e: Error) {
     process::exit(1);
 }
 
-fn run(file_path: Option<String>) -> Result<(), io::Error> {
-    let mut reader = open_input_stream(file_path)?;
-
-    let mut s = String::new();
-    (*reader).read_to_string(&mut s)?;
+fn run(cfg: config::AppConfig) -> Result<(), io::Error> {
+    let s = read_input(cfg.input.to_owned())?;
     let preprocessed_yaml = parse_yaml(s)?;
 
-    let use_color = atty::is(atty::Stream::Stdout);
-    output::print_to_stdout(preprocessed_yaml, use_color)?;
+    output::print_to_stdout(preprocessed_yaml, cfg.should_colorize())?;
 
     Ok(())
 }
 
-fn open_input_stream(file_path: Option<String>) -> Result<Box<dyn io::BufRead>, io::Error> {
-    if let Some(fp) = file_path {
+fn read_input(file_path: Option<String>) -> Result<String, Error> {
+    let mut reader: Box<dyn io::BufRead> = if let Some(fp) = file_path {
         let file_handle = File::open(fp)?;
-        Ok(Box::new(io::BufReader::new(file_handle)))
+        Box::new(io::BufReader::new(file_handle))
     } else {
         let file_handle = io::stdin().lock();
-        Ok(Box::new(io::BufReader::new(file_handle)))
-    }
+        Box::new(io::BufReader::new(file_handle))
+    };
+    let mut s = String::new();
+    (*reader).read_to_string(&mut s)?;
+    Ok(s)
 }
 
 fn parse_yaml(s: String) -> Result<String, io::Error> {

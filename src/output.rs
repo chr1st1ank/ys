@@ -1,11 +1,9 @@
+use std::io;
+use syntect;
 use syntect::easy;
-
 use syntect::highlighting;
 
-use syntect;
-
-use std::io;
-
+/// Print the given text to stdout
 pub(crate) fn print_to_stdout(text: String, use_color: bool) -> Result<(), io::Error> {
     if use_color {
         print_highlighted(&text);
@@ -17,7 +15,7 @@ pub(crate) fn print_to_stdout(text: String, use_color: bool) -> Result<(), io::E
     Ok(())
 }
 
-pub(crate) fn print_highlighted(text: &String) {
+fn print_highlighted(text: &String) {
     let syntax_set = syntect::parsing::SyntaxSet::load_defaults_nonewlines();
     let theme_set = highlighting::ThemeSet::load_defaults();
     let theme = &theme_set.themes["Solarized (dark)"];
@@ -29,7 +27,7 @@ pub(crate) fn print_highlighted(text: &String) {
     }
 }
 
-pub(crate) fn highlight_line(
+fn highlight_line(
     highlighter: &mut easy::HighlightLines,
     syntax_set: &syntect::parsing::SyntaxSet,
     text: &str,
