@@ -5,7 +5,9 @@ edition = "2021"
 
 [dependencies]
 atty = "0.2"
+range-collections = "0.2.4"
 yaml-rust = "0.4"
+termcolor = "1.1"
 
 [dependencies.clap]
 version = "3.2.17"

@@ -1,5 +1,7 @@
 receipt: Oz-Ware Purchase Invoice
 date: 2012-08-06
+inline-mapping: {"a": 1, "b": 2}
+inline-list: {1, 2}
 customer:
   first name: Harry
   family name: Potter
