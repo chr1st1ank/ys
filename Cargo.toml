@@ -17,3 +17,6 @@ features = ["derive", "suggestions", "color", "wrap_help"]
 version = "5.0.0"
 default-features = false
 features = ["parsing", "default-fancy"]
+
+[dev-dependencies]
+indoc = "1.0"

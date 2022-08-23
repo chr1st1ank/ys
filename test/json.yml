@@ -1,2 +1,2 @@
-inline-mapping: {"a": 1, "b": 2}
-inline-list: {1, 2}
+inline-mapping: {"a": 1, "b": 2, "c": 3}
+inline-list: [1, 2]

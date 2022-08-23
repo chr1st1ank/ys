@@ -38,7 +38,8 @@ fn run(cfg: config::AppConfig) -> Result<(), io::Error> {
     }
 
     let scanned_yaml =
-        yaml_parsing::filter_documents(s, &|key| is_key_included(&cfg.include_patterns(), key));
+        yaml_parsing::filter_documents(s, &|key| is_key_included(&cfg.include_patterns(), key))
+            .unwrap();
 
     // let yaml_docs = parse_yaml(scanned_yaml);
     // let preprocessed_yaml = to_yaml(yaml_docs)?;
