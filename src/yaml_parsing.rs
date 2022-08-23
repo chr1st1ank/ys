@@ -23,6 +23,16 @@ pub enum PathElement {
     Index(usize, usize),
 }
 
+pub fn is_key_included(include_patterns: &Vec<&str>, key: &str) -> bool {
+    for p in include_patterns {
+        // TODO: Allow * in all elements (compare element wise)
+        if key.starts_with(p) || p.starts_with(format!("{}.", key).as_str()) || *p == "*" {
+            return true;
+        }
+    }
+    false
+}
+
 impl PathElement {
     fn to_string(&self) -> String {
         match self {
@@ -319,6 +329,15 @@ fn extend_last_skiprange(skip_ranges: &mut Vec<Range<usize>>, new_start: usize, 
 mod test {
     use super::*;
     use indoc::indoc;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_is_key_included() {
+        assert!(!is_key_included(&vec!["key-with-list"], "nested-key"));
+        assert!(is_key_included(&vec!["main"], "main.nested-key"));
+        assert!(is_key_included(&vec!["main.nested-key"], "main.nested-key"));
+        assert!(is_key_included(&vec!["main.nested-key"], "main"));
+    }
 
     #[test]
     fn test_join_path_empty() {

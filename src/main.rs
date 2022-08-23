@@ -21,25 +21,16 @@ fn error_exit(e: Error) {
     process::exit(1);
 }
 
-fn is_key_included(include_patterns: &Vec<&str>, key: &str) -> bool {
-    for p in include_patterns {
-        // TODO: Allow * in all elements (compare element wise)
-        if key.starts_with(p) || *p == "*" {
-            return true;
-        }
-    }
-    false
-}
-
 fn run(cfg: config::AppConfig) -> Result<(), io::Error> {
     let s = read_input(cfg.input.to_owned())?;
     for (i, line) in s.lines().enumerate() {
         println!("{:>3} |{}", i + 1, line);
     }
 
-    let scanned_yaml =
-        yaml_parsing::filter_documents(s, &|key| is_key_included(&cfg.include_patterns(), key))
-            .unwrap();
+    let scanned_yaml = yaml_parsing::filter_documents(s, &|key| {
+        yaml_parsing::is_key_included(&cfg.include_patterns(), key)
+    })
+    .unwrap();
 
     // let yaml_docs = parse_yaml(scanned_yaml);
     // let preprocessed_yaml = to_yaml(yaml_docs)?;

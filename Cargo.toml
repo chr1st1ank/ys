@@ -20,3 +20,4 @@ features = ["parsing", "default-fancy"]
 
 [dev-dependencies]
 indoc = "1.0"
+pretty_assertions = "1.2"
