@@ -1,11 +1,20 @@
-pub fn is_key_included(include_patterns: &[&str], key: &str) -> bool {
-    for p in include_patterns {
-        // TODO: Allow * in all elements (compare element wise)
-        if key.starts_with(p) || p.starts_with(format!("{}.", key).as_str()) || *p == "*" {
-            return true;
+
+pub fn key_matches_any_pattern(include_patterns: &[&str], key: &str) -> bool {
+    for include_pattern in include_patterns {
+        if key_matches_pattern(key, include_pattern) {
+            return true
         }
     }
     false
+}
+
+fn key_matches_pattern(key: &str, include_pattern: &str) -> bool {
+    for (k, p) in key.split(".").zip(include_pattern.split(".")) {
+        if p != "*" && k != p {
+            return false
+        }
+    }
+    true
 }
 
 #[cfg(test)]
@@ -14,10 +23,20 @@ mod test {
 
     #[test]
     fn test_is_key_included() {
-        assert!(!is_key_included(&vec!["key-with-list"], "nested-key"));
-        assert!(is_key_included(&vec!["main"], "main.nested-key"));
-        assert!(is_key_included(&vec!["main.nested-key"], "main.nested-key"));
-        assert!(is_key_included(&vec!["main.nested-key"], "main"));
+        assert!(!key_matches_any_pattern(&vec!["key-with-list"], "nested-key"));
+        assert!(!key_matches_any_pattern(&vec!["key-with-list", "nested"], "nested-key"));
+        assert!(key_matches_any_pattern(&vec!["main"], "main.nested-key"));
+        assert!(key_matches_any_pattern(&vec!["*.nested-key"], "main.nested-key"));
+        assert!(key_matches_any_pattern(&vec!["main.*"], "main.nested-key"));
+        assert!(key_matches_any_pattern(&vec!["*"], "main.nested-key"));
+        assert!(!key_matches_any_pattern(&vec!["nested-key"], "main.nested-key"));
+        assert!(key_matches_any_pattern(&vec!["main.nested-key"], "main.nested-key"));
+        assert!(key_matches_any_pattern(&vec!["main.nested-key"], "main"));
+        assert!(key_matches_any_pattern(&vec!["main"], "main.1"));
+        assert!(key_matches_any_pattern(&vec!["main.1"], "main.1"));
+        assert!(key_matches_any_pattern(&vec!["main.*"], "main.1"));
+        assert!(!key_matches_any_pattern(&vec!["main.0"], "main.1"));
+        assert!(!key_matches_any_pattern(&vec!["*.0"], "main.1"));
     }
     //
     // use pretty_assertions::assert_eq;

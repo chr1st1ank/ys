@@ -58,7 +58,7 @@ fn filter_yaml_docs(yaml_docs: Vec<yaml_rust::Yaml>, include_patterns: &[&str]) 
     yaml_docs.iter()
         .map(|doc| {
             yaml_parsing::filter_yaml(doc, "", &|key| {
-                branch_selection::is_key_included(include_patterns, key)
+                branch_selection::key_matches_any_pattern(include_patterns, key)
             })
         })
         .collect()
