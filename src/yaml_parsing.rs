@@ -78,6 +78,249 @@ pub fn join_path_and_append(elements: &[PathElement], last: String) -> String {
 //     Ok("".to_owned())
 // }
 
+#[derive(Debug)]
+pub struct DocumentSection {
+    pub name: String,
+    pub path: String,
+    pub start: usize,
+    pub end: usize,
+}
+
+pub fn find_sections(input: String) -> Result<Vec<DocumentSection>, ScanError> {
+    let scanner = yaml_rust::scanner::Scanner::new(input.chars());
+
+    let mut state_stack = Vec::new();
+    let mut current_path: Vec<PathElement> = Vec::new();
+
+    let mut sections: Vec<DocumentSection> = Vec::new();
+    let empty_section: DocumentSection = DocumentSection {
+        name: String::new(),
+        path: String::new(),
+        start: 0,
+        end: 0,
+    };
+
+    for yaml_rust::scanner::Token(marker, token_type) in scanner {
+        let state = state_stack.last().unwrap_or(&ParserState::Empty);
+        println!("{:?}", state_stack);
+        println!(
+            "{:>3},{:>3},{:>3} Token: {:?}
+            State: {:?}
+            Start: {:?}
+            Path 1: {:}",
+            marker.line(),
+            marker.col(),
+            marker.index(),
+            token_type,
+            state,
+            current_path.last(),
+            join_path(&current_path)
+        );
+
+        if sections.last().unwrap_or(&empty_section).end == usize::MAX {
+            sections.last_mut().unwrap().end = marker.index();
+        }
+
+        match state {
+            ParserState::Empty => match token_type {
+                TokenType::StreamStart(_e) => {
+                    state_stack.push(ParserState::ExpectAnyToken);
+                    current_path.clear();
+                }
+                TokenType::DocumentStart => {
+                    state_stack.push(ParserState::ExpectAnyToken);
+                    current_path.clear();
+                }
+                _ => {
+                    unreachable!();
+                }
+            },
+            ParserState::ExpectAnyToken => match token_type {
+                TokenType::DocumentStart => {
+                    state_stack.clear();
+                    state_stack.push(ParserState::ExpectAnyToken);
+                    current_path.clear();
+                }
+                TokenType::BlockMappingStart | TokenType::FlowMappingStart => {
+                    state_stack.push(ParserState::ReadMapping);
+                }
+                TokenType::Key => state_stack.push(ParserState::ReadMappingKey),
+                TokenType::Value => state_stack.push(ParserState::ReadMappingValue),
+                TokenType::BlockSequenceStart | TokenType::FlowSequenceStart => {
+                    current_path.push(PathElement::Index(0, marker.index()));
+                    state_stack.push(ParserState::ReadListEntry(0, false));
+                }
+                TokenType::BlockEntry | TokenType::FlowEntry => {} // => state = ParserState::ReadListEntry,
+                TokenType::BlockEnd => {
+                    sections.push(DocumentSection {
+                        name: current_path.last().unwrap().to_string(),
+                        path: join_path(&current_path),
+                        start: current_path.last().unwrap().start(),
+                        end: marker.index(),
+                    });
+                    current_path.pop();
+                }
+                TokenType::FlowSequenceEnd | TokenType::FlowMappingEnd => {
+                    sections.push(DocumentSection {
+                        name: current_path.last().unwrap().to_string(),
+                        path: join_path(&current_path),
+                        start: current_path.last().unwrap().start(),
+                        end: marker.index(),
+                    });
+                    current_path.pop();
+                    current_path.pop();
+                }
+                TokenType::DocumentEnd | TokenType::StreamEnd => {
+                    state_stack.pop();
+                    state_stack.push(ParserState::EndDocument);
+                }
+                TokenType::NoToken => (),
+                TokenType::VersionDirective(_u1, _u2) => (),
+                TokenType::Alias(_s) | TokenType::Anchor(_s) => (),
+                TokenType::Tag(_s1, _s2) | TokenType::TagDirective(_s1, _s2) => (),
+                _ => {
+                    unreachable!();
+                }
+            },
+            ParserState::ReadMapping => match token_type {
+                TokenType::Key => state_stack.push(ParserState::ReadMappingKey),
+                TokenType::BlockEnd
+                | TokenType::FlowMappingEnd
+                | TokenType::StreamEnd
+                | TokenType::DocumentEnd => {
+                    sections.push(DocumentSection {
+                        name: current_path.last().unwrap().to_string(),
+                        path: join_path(&current_path),
+                        start: current_path.last().unwrap().start(),
+                        end: marker.index(),
+                    });
+                    current_path.pop();
+                    state_stack.pop();
+                }
+                TokenType::FlowEntry => {}
+                _ => {
+                    unreachable!();
+                }
+            },
+            ParserState::ReadMappingKey => match token_type {
+                TokenType::Key => {}
+                TokenType::Scalar(_scalar_style, value) => {
+                    current_path.push(PathElement::Key(value, marker.index()));
+                    state_stack.pop();
+                    state_stack.push(ParserState::ReadMappingValue);
+                }
+                _ => {
+                    unreachable!();
+                }
+            },
+            ParserState::ReadMappingValue => {
+                match token_type {
+                    TokenType::Value => {}
+                    TokenType::Scalar(_scalar_style, _value) => {
+                        sections.push(DocumentSection {
+                            name: current_path.last().unwrap().to_string(),
+                            path: join_path(&current_path),
+                            start: current_path.last().unwrap().start(),
+                            end: usize::MAX,
+                        });
+                        current_path.pop();
+                        state_stack.pop();
+                        // state_stack.push(ParserState::ReadMapping);
+                    }
+                    TokenType::BlockMappingStart | TokenType::FlowMappingStart => {
+                        state_stack.pop();
+                        state_stack.push(ParserState::ReadMappingKey)
+                    }
+                    TokenType::BlockSequenceStart | TokenType::FlowSequenceStart => {
+                        state_stack.pop();
+                        state_stack.push(ParserState::ReadListEntry(0, false))
+                    }
+                    TokenType::BlockEntry | TokenType::FlowEntry => {
+                        state_stack.pop();
+                        state_stack.push(ParserState::ReadListEntry(0, false))
+                    }
+                    TokenType::DocumentEnd | TokenType::StreamEnd => {
+                        sections.push(DocumentSection {
+                            name: current_path.last().unwrap().to_string(),
+                            path: join_path(&current_path),
+                            start: current_path.last().unwrap().start(),
+                            end: marker.index(),
+                        });
+                        state_stack.pop();
+                        state_stack.push(ParserState::EndDocument);
+                    }
+                    _ => {
+                        unreachable!();
+                    }
+                }
+            }
+            ParserState::ReadListEntry(i, path_pushed) => match token_type {
+                TokenType::BlockEntry | TokenType::FlowEntry => {}
+                TokenType::Scalar(_scalar_style, _value) => {
+                    let p = if *path_pushed {
+                        join_path(&current_path)
+                    } else {
+                        join_path_and_append(&current_path, i.to_string())
+                    };
+                    if *path_pushed {
+                        current_path.pop();
+                    }
+                    let next_index = i + 1;
+                    state_stack.pop();
+                    state_stack.push(ParserState::ReadListEntry(next_index, false));
+                }
+                TokenType::BlockMappingStart | TokenType::FlowMappingStart => {
+                    current_path.push(PathElement::Index(*i, marker.index()));
+                    let next_index = i + 1;
+                    state_stack.pop();
+                    state_stack.push(ParserState::ReadListEntry(next_index, false));
+                    state_stack.push(ParserState::ReadMapping)
+                }
+                TokenType::BlockEnd | TokenType::FlowSequenceEnd => {
+                    sections.push(DocumentSection {
+                        name: current_path.last().unwrap().to_string(),
+                        path: join_path(&current_path),
+                        start: current_path.last().unwrap().start(),
+                        end: marker.index(),
+                    });
+                    // if *path_pushed {
+                    // }
+                    current_path.pop();
+                    state_stack.pop();
+                    println!("Block End, popping state.")
+                }
+                TokenType::DocumentEnd | TokenType::StreamEnd => {
+                    sections.push(DocumentSection {
+                        name: current_path.last().unwrap().to_string(),
+                        path: join_path(&current_path),
+                        start: current_path.last().unwrap().start(),
+                        end: marker.index(),
+                    });
+                    if *path_pushed {
+                        current_path.pop();
+                    }
+                    state_stack.pop();
+                    state_stack.push(ParserState::EndDocument);
+                }
+                _ => {
+                    unreachable!();
+                }
+            },
+            ParserState::EndDocument => {
+                assert!(state_stack.is_empty());
+            }
+        };
+
+        println!("            Path 2: {:}", join_path(&current_path));
+        println!(
+            "            State 2: {:?}",
+            state_stack.last().unwrap_or(&ParserState::Empty)
+        );
+    }
+
+    Ok(sections)
+}
+
 pub fn filter_documents(
     input: String,
     is_key_whitelisted: &dyn Fn(&str) -> bool,
@@ -108,6 +351,7 @@ pub fn filter_documents(
         );
 
         if let Some(from) = skip_from {
+            println!("                Skip from {}", from);
             extend_last_skiprange(&mut skip_ranges, from, marker.index());
             skip_from = None;
         }
@@ -168,7 +412,18 @@ pub fn filter_documents(
             },
             ParserState::ReadMapping => match token_type {
                 TokenType::Key => state_stack.push(ParserState::ReadMappingKey),
-                TokenType::BlockEnd | TokenType::FlowMappingEnd => {
+                TokenType::BlockEnd
+                | TokenType::FlowMappingEnd
+                | TokenType::StreamEnd
+                | TokenType::DocumentEnd => {
+                    if !is_key_whitelisted(join_path(&current_path).as_str()) {
+                        skip_from = Some(
+                            current_path
+                                .last()
+                                .unwrap_or(&PathElement::Key("".to_owned(), marker.index()))
+                                .start(),
+                        );
+                    }
                     current_path.pop();
                     state_stack.pop();
                 }
@@ -194,47 +449,52 @@ pub fn filter_documents(
                     unreachable!();
                 }
             },
-            ParserState::ReadMappingValue => match token_type {
-                TokenType::Value => {}
-                TokenType::Scalar(_scalar_style, _value) => {
-                    if !is_key_whitelisted(join_path(&current_path).as_str()) {
-                        skip_from = Some(
-                            current_path
-                                .last()
-                                .unwrap_or(&PathElement::Key("".to_owned(), marker.index()))
-                                .start(),
-                        );
+            ParserState::ReadMappingValue => {
+                if !is_key_whitelisted(join_path(&current_path).as_str()) {
+                    skip_from = Some(
+                        current_path
+                            .last()
+                            .unwrap_or(&PathElement::Key("".to_owned(), marker.index()))
+                            .start(),
+                    );
+                }
+                match token_type {
+                    TokenType::Value => {}
+                    TokenType::Scalar(_scalar_style, _value) => {
+                        current_path.pop();
+                        state_stack.pop();
+                        // state_stack.push(ParserState::ReadMapping);
                     }
-                    current_path.pop();
-                    state_stack.pop();
-                    // state_stack.push(ParserState::ReadMapping);
+                    TokenType::BlockMappingStart | TokenType::FlowMappingStart => {
+                        state_stack.pop();
+                        state_stack.push(ParserState::ReadMappingKey)
+                    }
+                    TokenType::BlockSequenceStart | TokenType::FlowSequenceStart => {
+                        state_stack.pop();
+                        state_stack.push(ParserState::ReadListEntry(0, false))
+                    }
+                    TokenType::BlockEntry | TokenType::FlowEntry => {
+                        state_stack.pop();
+                        state_stack.push(ParserState::ReadListEntry(0, false))
+                    }
+                    TokenType::DocumentEnd | TokenType::StreamEnd => {
+                        state_stack.pop();
+                        state_stack.push(ParserState::EndDocument);
+                    }
+                    _ => {
+                        unreachable!();
+                    }
                 }
-                TokenType::BlockMappingStart | TokenType::FlowMappingStart => {
-                    state_stack.pop();
-                    state_stack.push(ParserState::ReadMappingKey)
-                }
-                TokenType::BlockSequenceStart | TokenType::FlowSequenceStart => {
-                    state_stack.pop();
-                    state_stack.push(ParserState::ReadListEntry(0, false))
-                }
-                TokenType::BlockEntry | TokenType::FlowEntry => {
-                    state_stack.pop();
-                    state_stack.push(ParserState::ReadListEntry(0, false))
-                }
-                TokenType::DocumentEnd | TokenType::StreamEnd => {
-                    state_stack.pop();
-                    state_stack.push(ParserState::EndDocument);
-                }
-                _ => {
-                    unreachable!();
-                }
-            },
+            }
             ParserState::ReadListEntry(i, path_pushed) => match token_type {
                 TokenType::BlockEntry | TokenType::FlowEntry => {}
                 TokenType::Scalar(_scalar_style, _value) => {
-                    if !is_key_whitelisted(
-                        join_path_and_append(&current_path, i.to_string()).as_str(),
-                    ) {
+                    let p = if *path_pushed {
+                        join_path(&current_path)
+                    } else {
+                        join_path_and_append(&current_path, i.to_string())
+                    };
+                    if !is_key_whitelisted(p.as_str()) {
                         skip_from = Some(
                             current_path
                                 .last()
@@ -242,7 +502,9 @@ pub fn filter_documents(
                                 .start(),
                         );
                     }
-                    current_path.pop();
+                    if *path_pushed {
+                        current_path.pop();
+                    }
                     let next_index = i + 1;
                     state_stack.pop();
                     state_stack.push(ParserState::ReadListEntry(next_index, false));
@@ -360,7 +622,7 @@ mod test {
         key-with-string: 'string'
         key-with-float: 3.14
         inline-mapping: {'a': 1, 'b': 2}
-        inline-list: {1, 2}
+        inline-list: [1, 2]
         key-with-subtree:
             nested-key-with-string: \"another string\"
         key-with-list:
@@ -382,7 +644,7 @@ mod test {
         assert_eq!(
             filter_documents(EXAMPLE_YAML.to_owned(), &|s: &str| s
                 .starts_with("key-with-string")),
-            Ok("key-with-string: 'string'".to_owned())
+            Ok("key-with-string: 'string'\n".to_owned())
         );
     }
 
@@ -414,7 +676,7 @@ mod test {
                 .to_owned(),
                 &|s: &str| s.starts_with("date")
             ),
-            Ok("date: 2012-08-06".to_owned())
+            Ok("date: 2012-08-06\n".to_owned())
         );
     }
 }

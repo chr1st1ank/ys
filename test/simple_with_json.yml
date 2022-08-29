@@ -1,0 +1,10 @@
+key-with-string: 'string'
+key-with-float: 3.14
+inline-mapping: {'a': 1, 'b': 2}
+inline-list: [1, 2]
+key-with-subtree:
+    nested-key-with-string: \"another string\"
+key-with-list:
+- item 1
+- item 2
+- item 3
