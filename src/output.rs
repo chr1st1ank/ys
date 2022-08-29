@@ -6,7 +6,7 @@ use syntect::highlighting;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 /// Print the given text to stdout
-pub(crate) fn print_to_stdout(text: String, use_color: bool) -> Result<(), io::Error> {
+pub(crate) fn print_to_stdout(text: &str, use_color: bool) -> Result<(), io::Error> {
     if use_color {
         print_highlighted(&text)?;
     } else {
@@ -17,7 +17,7 @@ pub(crate) fn print_to_stdout(text: String, use_color: bool) -> Result<(), io::E
     Ok(())
 }
 
-fn print_highlighted(text: &String) -> io::Result<()> {
+fn print_highlighted(text: &str) -> io::Result<()> {
     let syntax_set = syntect::parsing::SyntaxSet::load_defaults_nonewlines();
     let theme_set = highlighting::ThemeSet::load_defaults();
     let theme = &theme_set.themes["Solarized (dark)"];
