@@ -1,8 +1,10 @@
 # ys
 
 <div align="center">
-[![CI](https://github.com/chr1st1ank/ys/workflows/ci/badge.svg)](https://github.com/chr1st1ank/ys/actions)
-[![Coverage Status](https://coveralls.io/repos/github/chr1st1ank/ys/badge.svg?branch=main)](https://coveralls.io/github/chr1st1ank/ys?branch=main)
+
+[![CI](https://github.com/chr1st1ank/ys/actions/workflows/ci.yml/badge.svg)](https://github.com/chr1st1ank/ys/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/chr1st1ank/ys/branch/main/graph/badge.svg?token=8QQ02R0FOJ)](https://codecov.io/gh/chr1st1ank/ys)
+
 </div>
 
 *ys* (yaml-search) is a filter and formatting command line tool for yaml files.
