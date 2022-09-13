@@ -1,8 +1,8 @@
 extern crate yaml_rust;
 use std::fs::File;
+use std::io;
 use std::io::Error;
 use std::process;
-use std::io;
 
 mod branch_selection;
 mod config;
@@ -54,10 +54,14 @@ fn parse_yaml(s: String) -> Vec<yaml_rust::Yaml> {
     yaml_docs
 }
 
-fn filter_yaml_docs(yaml_docs: Vec<yaml_rust::Yaml>, include_patterns: &[&str]) -> Vec<yaml_rust::Yaml> {
-    yaml_docs.iter()
+fn filter_yaml_docs(
+    yaml_docs: Vec<yaml_rust::Yaml>,
+    include_patterns: &[&str],
+) -> Vec<yaml_rust::Yaml> {
+    yaml_docs
+        .iter()
         .map(|doc| {
-            yaml_parsing::filter_yaml(doc, "", &|key| {
+            yaml_parsing::filter_yaml(doc, &|key| {
                 branch_selection::key_matches_any_pattern(include_patterns, key)
             })
         })
