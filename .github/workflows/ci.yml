@@ -9,7 +9,7 @@ on:
       - main
 jobs:
   pre-commit:
-    name: Linting
+    name: pre-commit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
