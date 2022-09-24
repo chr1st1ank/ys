@@ -1,6 +1,5 @@
 use std::io;
 use std::io::Write;
-use syntect;
 use syntect::easy;
 use syntect::highlighting;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
@@ -8,7 +7,7 @@ use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 /// Print the given text to stdout
 pub(crate) fn print_to_stdout(text: &str, use_color: bool) -> Result<(), io::Error> {
     if use_color {
-        print_highlighted(&text)?;
+        print_highlighted(text)?;
     } else {
         for line in text.lines() {
             println!("{}", line);
@@ -38,8 +37,7 @@ fn highlight_line(
 ) -> String {
     let ranges: Vec<(highlighting::Style, &str)> =
         highlighter.highlight_line(text, syntax_set).unwrap();
-    let escaped = syntect::util::as_24_bit_terminal_escaped(&ranges[..], true);
-    escaped
+    syntect::util::as_24_bit_terminal_escaped(&ranges[..], true)
 }
 
 fn write_line_number(i: usize) -> io::Result<()> {

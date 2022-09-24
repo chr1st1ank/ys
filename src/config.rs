@@ -1,4 +1,3 @@
-use atty;
 use clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -27,6 +26,6 @@ impl AppConfig {
         atty::is(atty::Stream::Stdout)
     }
     pub fn include_patterns(&self) -> Vec<&str> {
-        self.select.split(",").collect()
+        self.select.split(',').collect()
     }
 }

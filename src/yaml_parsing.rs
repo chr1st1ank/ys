@@ -62,10 +62,10 @@ fn filter_map(
 }
 
 fn concat_path(path: &str, k: &str) -> String {
-    if path == "" {
+    if path.is_empty() {
         k.to_owned()
     } else {
-        (path.to_owned() + "." + k).to_owned()
+        path.to_owned() + "." + k
     }
 }
 

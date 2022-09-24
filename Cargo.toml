@@ -2,7 +2,6 @@
 name = "ys"
 description = "ys (yaml-search) is a filter and formatting command line tool for yaml files."
 license = "Apache-2.0"
-license-file = "LICENSE.rst"
 repository = "https://github.com/chr1st1ank/ys"
 version = "0.1.0"
 edition = "2021"

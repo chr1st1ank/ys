@@ -8,7 +8,7 @@ pub fn key_matches_any_pattern(include_patterns: &[&str], key: &str) -> bool {
 }
 
 fn key_matches_pattern(key: &str, include_pattern: &str) -> bool {
-    for (k, p) in key.split(".").zip(include_pattern.split(".")) {
+    for (k, p) in key.split('.').zip(include_pattern.split('.')) {
         if p != "*" && k != p {
             return false;
         }
