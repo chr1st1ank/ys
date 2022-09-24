@@ -25,12 +25,12 @@ fn filter_yaml_on_subpath(
 }
 
 fn filter_array(
-    yaml_array: &Vec<yaml_rust::Yaml>,
+    yaml_array: &[yaml_rust::Yaml],
     path: &str,
     is_key_whitelisted: &dyn Fn(&str) -> bool,
 ) -> yaml_rust::Yaml {
     use yaml_rust::Yaml;
-    println!("filter_array({:?})", yaml_array);
+
     let vec2 = yaml_array
         .iter()
         .enumerate()

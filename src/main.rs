@@ -1,4 +1,6 @@
+extern crate pretty_env_logger;
 extern crate yaml_rust;
+
 use std::fs::File;
 use std::io;
 use std::io::Error;
@@ -10,6 +12,7 @@ mod output;
 mod yaml_parsing;
 
 fn main() {
+    pretty_env_logger::init();
     let cfg = config::AppConfig::from_args();
 
     if let Err(e) = run(cfg) {
@@ -18,15 +21,15 @@ fn main() {
 }
 
 fn error_exit(e: Error) {
-    eprintln!("Error opening file. {}", e);
+    log::error!("Error opening file. {}", e);
     process::exit(1);
 }
 
 fn run(cfg: config::AppConfig) -> Result<(), io::Error> {
     let s = read_input(cfg.input.to_owned())?;
-    println!("{}", "-".repeat(20));
-    output::print_to_stdout(&s, true)?;
-    println!("{}", "-".repeat(20));
+    log::debug!("{}", "-".repeat(20));
+    log::debug!("{}", &s);
+    log::debug!("{}", "-".repeat(20));
 
     let yaml_docs_filtered = filter_yaml_docs(parse_yaml(s), &cfg.include_patterns());
 

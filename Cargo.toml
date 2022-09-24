@@ -8,9 +8,11 @@ edition = "2021"
 
 [dependencies]
 atty = "0.2"
+log = "0.4.17"
+pretty_env_logger = "0.4.0"
 range-collections = "0.2.4"
-yaml-rust = "0.4"
 termcolor = "1.1"
+yaml-rust = "0.4"
 
 [dependencies.clap]
 version = "3.2.22"
