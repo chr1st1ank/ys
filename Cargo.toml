@@ -15,7 +15,7 @@ termcolor = "1.1"
 yaml-rust = "0.4"
 
 [dependencies.clap]
-version = "3.2.22"
+version = "4.0.0"
 features = ["derive", "suggestions", "color", "wrap_help"]
 
 [dependencies.syntect]
