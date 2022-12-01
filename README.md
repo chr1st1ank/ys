@@ -1,5 +1,7 @@
 # ys
 
+**Archived because [yq](https://github.com/mikefarah/yq) (the Go version, there's also a less stable Python version) does the job quite well**
+
 <div align="center">
 
 [![CI](https://github.com/chr1st1ank/ys/actions/workflows/ci.yml/badge.svg)](https://github.com/chr1st1ank/ys/actions/workflows/ci.yml)
